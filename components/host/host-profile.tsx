@@ -1,10 +1,10 @@
-import type { Host } from "@/types";
+import type { PublicHost } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { formatUSDC } from "@/lib/utils";
 import { Clock, Globe } from "lucide-react";
 
 interface HostProfileProps {
-  host: Host;
+  host: PublicHost;
 }
 
 export function HostProfile({ host }: HostProfileProps) {

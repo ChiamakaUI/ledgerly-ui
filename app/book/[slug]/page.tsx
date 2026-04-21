@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import type { Host, Slot } from "@/types";
+import type { PublicHost, Slot } from "@/types";
 import { getHost, getSlots, toDateKey } from "@/lib";
 import { HostProfile, DatePicker, SlotGrid, BookingPanel } from "@/components";
 
@@ -10,7 +10,7 @@ export default function BookHostPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
 
-  const [host, setHost] = React.useState<Host | null>(null);
+  const [host, setHost] = React.useState<PublicHost | null>(null);
   const [slots, setSlots] = React.useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<Date>(() => {
@@ -118,7 +118,6 @@ export default function BookHostPage() {
             <BookingPanel
               host={host}
               slot={selectedSlot}
-              onClear={() => setSelectedSlot(null)}
             />
           ) : (
             <EmptyPanel />

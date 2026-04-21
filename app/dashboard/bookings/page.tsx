@@ -77,7 +77,7 @@ export default function DashboardBookingsPage() {
         )}
 
         {connected && !error && bookings !== null && (
-          <BookingsList bookings={bookings} />
+          <BookingsList bookings={bookings} hostWallet={walletAddress ?? ""} />
         )}
       </div>
     </div>

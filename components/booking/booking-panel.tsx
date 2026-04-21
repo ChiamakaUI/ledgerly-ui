@@ -126,8 +126,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
     );
   }
 
-  // Active state — slot picked, ready to collect info and pay.
-  const rate = formatUSDC(host.rate);
+  const rate = formatUSDC(host.rate, { symbol: false });
   const scheduledFor = new Date(slot!.startTime);
   const formattedDate = scheduledFor.toLocaleString("en-US", {
     weekday: "long",

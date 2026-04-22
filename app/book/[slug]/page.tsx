@@ -1,7 +1,5 @@
 "use client";
-
 export const dynamic = "force-dynamic"; 
-
 import * as React from "react";
 import { useParams } from "next/navigation";
 import type { PublicHost, Slot } from "@/types";
@@ -22,7 +20,6 @@ export default function BookHostPage() {
   });
   const [selectedSlot, setSelectedSlot] = React.useState<Slot | null>(null);
 
-  // Load host.
   React.useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -34,7 +31,6 @@ export default function BookHostPage() {
     };
   }, [slug]);
 
-  // Load slots whenever the date changes.
   React.useEffect(() => {
     let cancelled = false;
     setSlotsLoading(true);
@@ -51,26 +47,33 @@ export default function BookHostPage() {
     };
   }, [slug, selectedDate]);
 
-  // On mobile, when a slot is picked scroll the booking panel into view so it's obvious.
+  // On mobile, scroll booking panel into view when a slot is picked.
   const panelRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
-    if (selectedSlot && typeof window !== "undefined" && window.innerWidth < 768) {
-      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (
+      selectedSlot &&
+      typeof window !== "undefined" &&
+      window.innerWidth < 1024
+    ) {
+      panelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   }, [selectedSlot]);
 
   return (
-    <div className="container py-10 md:py-16">
-      <div className="grid lg:grid-cols-[1fr_420px] gap-8 lg:gap-12">
+    <div className="container py-6 md:py-10 lg:py-16">
+      <div className="grid lg:grid-cols-[1fr_420px] gap-6 md:gap-8 lg:gap-12">
         {/* LEFT — profile + picker */}
-        <div className="space-y-10">
+        <div className="space-y-8 md:space-y-10 min-w-0">
           {host ? (
             <HostProfile host={host} />
           ) : (
-            <div className="animate-pulse flex gap-6">
-              <div className="h-20 w-20 rounded-2xl bg-muted" />
-              <div className="flex-1 space-y-3">
-                <div className="h-10 w-48 bg-muted rounded-lg" />
+            <div className="animate-pulse flex gap-4 md:gap-6">
+              <div className="h-16 w-16 md:!h-20 md:!w-20 rounded-2xl bg-muted shrink-0" />
+              <div className="flex-1 space-y-3 min-w-0">
+                <div className="h-8 md:!h-10 w-48 bg-muted rounded-lg" />
                 <div className="h-4 w-full max-w-md bg-muted/60 rounded" />
                 <div className="h-4 w-3/4 max-w-sm bg-muted/60 rounded" />
               </div>
@@ -80,11 +83,11 @@ export default function BookHostPage() {
           <div className="hairline" />
 
           <section className="space-y-4">
-            <div className="flex items-baseline justify-between">
-              <h2 className="font-display text-2xl tracking-tight">
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 className="font-display text-xl md:!text-2xl tracking-tight">
                 Pick a date
               </h2>
-              <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+              <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground whitespace-nowrap">
                 next 14 days
               </span>
             </div>
@@ -96,12 +99,12 @@ export default function BookHostPage() {
           </section>
 
           <section className="space-y-4">
-            <div className="flex items-baseline justify-between">
-              <h2 className="font-display text-2xl tracking-tight">
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 className="font-display text-xl md:!text-2xl tracking-tight">
                 Pick a time
               </h2>
-              <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                {host?.durationMinutes ?? 30} min slots
+              <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+                {host?.durationMinutes ?? 30} min
               </span>
             </div>
             <SlotGrid
@@ -114,13 +117,10 @@ export default function BookHostPage() {
           </section>
         </div>
 
-        {/* RIGHT — booking panel */}
-        <div className="lg:sticky lg:top-24 h-fit" ref={panelRef}>
+        {/* RIGHT — booking panel (sticky on desktop, natural flow on mobile) */}
+        <div className="lg:!sticky lg:!top-24 h-fit" ref={panelRef}>
           {host && selectedSlot ? (
-            <BookingPanel
-              host={host}
-              slot={selectedSlot}
-            />
+            <BookingPanel host={host} slot={selectedSlot} />
           ) : (
             <EmptyPanel />
           )}
@@ -132,7 +132,7 @@ export default function BookHostPage() {
 
 function EmptyPanel() {
   return (
-    <div className="hidden lg:block rounded-2xl border border-dashed border-border bg-card/40 p-8 text-center min-h-[420px] flex-col justify-center">
+    <div className="hidden lg:!flex rounded-2xl border border-dashed border-border bg-card/40 p-8 text-center min-h-[420px] flex-col items-center justify-center">
       <div className="mx-auto h-12 w-12 rounded-full bg-muted grid place-items-center mb-4">
         <div className="h-3 w-3 rounded-full bg-muted-foreground/40" />
       </div>

@@ -43,6 +43,10 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
     emailValid &&
     phase !== "processing";
 
+  // `rate` is the numeric USDC amount without symbol. We add "USDC" once,
+  // next to it — never bake it into the number.
+  const rate = formatUSDC(host.rate, { symbol: false });
+
   function validate(): boolean {
     const errs: typeof fieldErrors = {};
     if (!nameTrimmed) errs.name = "Your name is required.";
@@ -82,10 +86,10 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
     }
   }
 
-  // Empty state — no slot picked yet.
+  // Empty state.
   if (!slot && phase !== "success") {
     return (
-      <aside className="lg:sticky lg:top-24 rounded-2xl border border-border bg-card p-6">
+      <aside className="rounded-2xl border border-border bg-card p-6">
         <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
           / Review booking
         </p>
@@ -96,10 +100,10 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
     );
   }
 
-  // Success state — booking confirmed.
+  // Success state.
   if (phase === "success" && bookingId) {
     return (
-      <aside className="lg:sticky lg:top-24 rounded-2xl border border-primary/30 bg-primary/5 p-6">
+      <aside className="rounded-2xl border border-primary/30 bg-primary/5 p-6">
         <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
           / Confirmed
         </p>
@@ -126,7 +130,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
     );
   }
 
-  const rate = formatUSDC(host.rate, { symbol: false });
+  // Active review + pay state.
   const scheduledFor = new Date(slot!.startTime);
   const formattedDate = scheduledFor.toLocaleString("en-US", {
     weekday: "long",
@@ -138,7 +142,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
   });
 
   return (
-    <aside className="lg:sticky lg:top-24 rounded-2xl border border-border bg-card p-6">
+    <aside className="rounded-2xl border border-border bg-card p-5 sm:!p-6">
       <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
         / Review booking
       </p>
@@ -150,8 +154,8 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
         <Row
           label="you pay"
           value={
-            <span>
-              <span className="font-display text-base">{rate}</span>{" "}
+            <span className="inline-flex items-baseline gap-1">
+              <span className="font-display text-base tabular">{rate}</span>
               <span className="text-xs text-muted-foreground">USDC</span>
             </span>
           }
@@ -182,6 +186,8 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
           <Input
             id="caller-email"
             type="email"
+            inputMode="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -256,8 +262,8 @@ function Row({
   value: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <dt className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+    <div className="flex items-baseline justify-between gap-4">
+      <dt className="text-xs font-mono uppercase tracking-widest text-muted-foreground shrink-0">
         {label}
       </dt>
       <dd className="text-sm text-foreground text-right min-w-0 truncate">

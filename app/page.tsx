@@ -23,7 +23,7 @@ export default function LandingPage() {
           </div>
 
           <h1
-            className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight text-balance animate-fade-in-up"
+            className="font-display text-5xl sm:text-6xl md:!text-6xl lg:!text-7xl leading-[0.95] tracking-tight text-balance animate-fade-in-up"
             style={{ animationDelay: "80ms" }}
           >
             Get paid for <span className="italic text-primary">your time</span>,

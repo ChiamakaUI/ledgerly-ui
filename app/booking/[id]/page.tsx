@@ -47,37 +47,35 @@ export default function BookingStatusPage() {
     };
   }, [id]);
 
-const handleCancel = async () => {
-  if (!booking) return;
-  const cancelerWallet = walletAddress ?? booking.callerWallet;
-  if (!cancelerWallet) return;
-  setCancelling(true);
-  try {
-    const updated = await cancelBooking(booking.id, cancelerWallet);
-    setBooking(updated);
-    show({
-      kind: "success",
-      title: "Booking cancelled",
-      description: updated.refundSignature
-        ? "Refund processed."
-        : undefined,
-      action: updated.refundSignature
-        ? {
-            label: "View refund transaction",
-            href: `https://solscan.io/tx/${updated.refundSignature}?cluster=devnet`,
-          }
-        : undefined,
-    });
-  } catch (e) {
-    show({
-      kind: "error",
-      title: "Could not cancel booking",
-      description: e instanceof Error ? e.message : "Please try again.",
-    });
-  } finally {
-    setCancelling(false);
-  }
-};
+  const handleCancel = async () => {
+    if (!booking) return;
+    const cancelerWallet = walletAddress ?? booking.callerWallet;
+    if (!cancelerWallet) return;
+    setCancelling(true);
+    try {
+      const updated = await cancelBooking(booking.id, cancelerWallet);
+      setBooking(updated);
+      show({
+        kind: "success",
+        title: "Booking cancelled",
+        description: updated.refundSignature ? "Refund processed." : undefined,
+        action: updated.refundSignature
+          ? {
+              label: "View refund transaction",
+              href: `https://solscan.io/tx/${updated.refundSignature}?cluster=devnet`,
+            }
+          : undefined,
+      });
+    } catch (e) {
+      show({
+        kind: "error",
+        title: "Could not cancel booking",
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   if (!booking) {
     return (
@@ -92,7 +90,7 @@ const handleCancel = async () => {
   }
 
   return (
-    <div className="container py-10 md:py-16">
+    <div className="container py-6 md:!py-10 lg:!py-16">
       <div className="max-w-2xl mx-auto">
         <Link
           href="/"
@@ -108,13 +106,13 @@ const handleCancel = async () => {
           {booking.status === "pending_payment" && (
             <PendingPaymentCard booking={booking} />
           )}
-          {(booking.status === "paid" || booking.status === "active") && <PaidCard booking={booking} />}
+          {(booking.status === "paid" || booking.status === "active") && (
+            <PaidCard booking={booking} />
+          )}
           {booking.status === "completed" && (
             <CompletedCard booking={booking} />
           )}
-          {booking.status === "refunded" && (
-            <RefundedCard booking={booking} />
-          )}
+          {booking.status === "refunded" && <RefundedCard booking={booking} />}
           {booking.status === "expired" && <ExpiredCard booking={booking} />}
           {booking.status === "no_show" && <ExpiredCard booking={booking} />}
 
@@ -142,7 +140,11 @@ const handleCancel = async () => {
                 Abandon booking
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => router.refresh()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.refresh()}
+            >
               <RefreshCcw className="h-3.5 w-3.5" />
               Refresh
             </Button>
@@ -164,7 +166,7 @@ const STATUS_META: Record<
 > = {
   pending_payment: { label: "Awaiting payment", variant: "warning" },
   paid: { label: "Confirmed", variant: "primary" },
-  active: { label: "In progress", variant: "primary" }, 
+  active: { label: "In progress", variant: "primary" },
   completed: { label: "Completed", variant: "success" },
   refunded: { label: "Refunded", variant: "muted" },
   expired: { label: "Expired", variant: "muted" },
@@ -220,7 +222,7 @@ function PendingPaymentCard({ booking }: { booking: Booking }) {
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-6 md:gap-8 shrink-0 md:pl-6 md:border-l md:border-warning/30">
+      <div className="flex items-center gap-6 md:!gap-8 shrink-0 md:!pl-6 md:!border-l md:!border-warning/30 w-full md:!w-auto flex-wrap md:!flex-nowrap">
         <div>
           <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             expires in
@@ -248,7 +250,8 @@ function PaidCard({ booking }: { booking: Booking }) {
 
   const scheduledMs = new Date(booking.scheduledAt).getTime();
   const joinOpensAt = scheduledMs - 5 * 60 * 1000;
-  const joinClosesAt = scheduledMs + booking.durationMinutes * 60 * 1000 + 15 * 60 * 1000;
+  const joinClosesAt =
+    scheduledMs + booking.durationMinutes * 60 * 1000 + 15 * 60 * 1000;
   const canJoin = now >= joinOpensAt && now <= joinClosesAt;
 
   return (
@@ -257,7 +260,7 @@ function PaidCard({ booking }: { booking: Booking }) {
         aria-hidden
         className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl"
       />
-      <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="relative flex flex-col md:!flex-row md:!items-center justify-between gap-4 md:!gap-6">
         <div className="flex items-start gap-4 min-w-0">
           <div className="h-10 w-10 shrink-0 rounded-full bg-primary/20 text-primary grid place-items-center">
             <Check className="h-5 w-5" strokeWidth={2.5} />
@@ -275,19 +278,31 @@ function PaidCard({ booking }: { booking: Booking }) {
             </p>
           </div>
         </div>
-        {canJoin ? (
-          <Button asChild size="lg" variant="primary">
-            <Link href={`/call/${booking.id}`}>
+        <div className="w-full md:!w-auto">
+          {canJoin ? (
+            <Button
+              asChild
+              size="lg"
+              variant="primary"
+              className="w-full md:!w-auto"
+            >
+              <Link href={`/call/${booking.id}`}>
+                <Video className="h-4 w-4" />
+                Join call
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              variant="primary"
+              disabled
+              className="w-full md:!w-auto"
+            >
               <Video className="h-4 w-4" />
-              Join call
-            </Link>
-          </Button>
-        ) : (
-          <Button size="lg" variant="primary" disabled>
-            <Video className="h-4 w-4" />
-            Join opens 5 min before
-          </Button>
-        )}
+              Join opens 5 min before
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -305,9 +320,10 @@ function CompletedCard({ booking }: { booking: Booking }) {
             Call completed · funds released
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Settled {formatRelative(booking.scheduledAt)} to the host&apos;s wallet.
+            Settled {formatRelative(booking.scheduledAt)} to the host&apos;s
+            wallet.
           </p>
-          <div className="mt-5 grid sm:grid-cols-2 gap-3">
+          <div className="mt-5 grid grid-cols-1 md:!grid-cols-2 gap-3">
             <TxLink label="Deposit tx" signature={booking.depositSignature} />
             <TxLink
               label="Release tx"
@@ -328,7 +344,9 @@ function RefundedCard({ booking }: { booking: Booking }) {
           <RefreshCcw className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-2xl tracking-tight">Refund processed</p>
+          <p className="font-display text-2xl tracking-tight">
+            Refund processed
+          </p>
           <p className="text-sm text-muted-foreground mt-1 text-pretty">
             {booking.refundReason ??
               "The booking was cancelled and funds have been returned to the caller's wallet."}
@@ -411,7 +429,9 @@ function DetailsCard({ booking }: { booking: Booking }) {
         )}
         <DetailRow
           label="Stream"
-          value={<span className="font-mono text-xs">{booking.streamName}</span>}
+          value={
+            <span className="font-mono text-xs">{booking.streamName}</span>
+          }
         />
       </dl>
     </div>

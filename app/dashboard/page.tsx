@@ -1,32 +1,30 @@
 "use client";
 
-export const dynamic = "force-dynamic"; 
+export const dynamic = "force-dynamic";
 
-import * as React from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Copy, Link as LinkIcon, Save, Sparkles } from "lucide-react";
-import type {
-  AvailabilityRule,
-  Booking,
-  Host,
-} from "@/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import type { AvailabilityRule, Booking, Host } from "@/types";
+import {
+  Button,
+  Input,
+  Label,
+  Badge,
+  useToast,
+  AvailabilityEditor,
+  BookingsList,
+} from "@/components";
 import {
   getHostMe,
   listHostBookings,
   setAvailability,
   updateHostProfile,
-} from "@/lib/api";
-import { ApiError } from "@/lib/http";
-import { useWallet } from "@/lib/wallet";
-import { useToast } from "@/components/ui/toast";
-import { AvailabilityEditor } from "@/components/host/availability-editor";
-import { BookingsList } from "@/components/host/bookings-list";
-import { formatUSDC } from "@/lib/utils";
+  ApiError,
+  useWallet,
+  formatUSDC,
+} from "@/lib";
 
 const TIMEZONES = [
   "Africa/Lagos",
@@ -40,32 +38,39 @@ const TIMEZONES = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { address: walletAddress, connected, connecting, connect } = useWallet();
+  const {
+    address: walletAddress,
+    connected,
+    connecting,
+    connect,
+  } = useWallet();
   const { show } = useToast();
 
-  const [host, setHost] = React.useState<Host | null>(null);
-  const [availability, setAvailabilityState] = React.useState<AvailabilityRule[]>(
-    [],
-  );
-  const [initialAvailability, setInitialAvailability] = React.useState<AvailabilityRule[]>([]);
-  const [bookings, setBookings] = React.useState<Booking[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const [host, setHost] = useState<Host | null>(null);
+  const [availability, setAvailabilityState] = useState<
+    AvailabilityRule[]
+  >([]);
+  const [initialAvailability, setInitialAvailability] = useState<
+    AvailabilityRule[]
+  >([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Profile form state
-  const [name, setName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [bio, setBio] = React.useState("");
-  const [rateUsdc, setRateUsdc] = React.useState("5");
-  const [duration, setDuration] = React.useState(30);
-  const [timezone, setTimezone] = React.useState("Africa/Lagos");
-  const [emailError, setEmailError] = React.useState<string | null>(null);
-  const [savingProfile, setSavingProfile] = React.useState(false);
-  const [savingAvailability, setSavingAvailability] = React.useState(false);
-  const [copied, setCopied] = React.useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [rateUsdc, setRateUsdc] = useState("5");
+  const [duration, setDuration] = useState(30);
+  const [timezone, setTimezone] = useState("Africa/Lagos");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingAvailability, setSavingAvailability] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Load host profile. Redirect to /setup if not registered.
-  React.useEffect(() => {
+  useEffect(() => {
     if (connecting) return;
     if (!connected || !walletAddress) {
       setLoading(false);
@@ -104,7 +109,7 @@ export default function DashboardPage() {
   }, [connected, connecting, walletAddress, router]);
 
   // Load host's bookings.
-  React.useEffect(() => {
+  useEffect(() => {
     if (!walletAddress || !host) {
       setBookings([]);
       return;
@@ -123,9 +128,8 @@ export default function DashboardPage() {
     };
   }, [walletAddress, host]);
 
-  const availabilityDirty = React.useMemo(
-    () =>
-      JSON.stringify(availability) !== JSON.stringify(initialAvailability),
+  const availabilityDirty = useMemo(
+    () => JSON.stringify(availability) !== JSON.stringify(initialAvailability),
     [availability, initialAvailability],
   );
 
@@ -293,8 +297,8 @@ export default function DashboardPage() {
                   Set your availability
                 </p>
                 <p className="text-sm text-muted-foreground mt-1 text-pretty">
-                  Callers can&apos;t book you until you say when you&apos;re free.
-                  Scroll down to add windows.
+                  Callers can&apos;t book you until you say when you&apos;re
+                  free. Scroll down to add windows.
                 </p>
               </div>
             </div>
@@ -312,6 +316,12 @@ export default function DashboardPage() {
             <SideLink href="#profile" label="Profile" />
             <SideLink href="#availability" label="Availability" />
             <SideLink href="#bookings" label="Bookings" />
+            <Link
+              href="/dashboard/sessions"
+              className="px-3 py-1.5 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors whitespace-nowrap inline-flex items-center gap-1"
+            >
+              Sessions <span className="text-[10px] text-primary">↗</span>
+            </Link>
           </nav>
 
           <div className="hidden lg:block mt-10 rounded-2xl border border-border bg-card p-5 space-y-3">
@@ -340,10 +350,7 @@ export default function DashboardPage() {
                 <span className="font-mono tabular">
                   {bookings
                     .filter((b) => b.status === "completed")
-                    .reduce(
-                      (sum, b) => sum + Number(b.amount) / 1_000_000,
-                      0,
-                    )
+                    .reduce((sum, b) => sum + Number(b.amount) / 1_000_000, 0)
                     .toFixed(2)}
                 </span>
               }
@@ -489,7 +496,10 @@ export default function DashboardPage() {
               }
             />
             <div className="mt-6">
-              <BookingsList bookings={bookings} hostWallet={walletAddress ?? ""} />
+              <BookingsList
+                bookings={bookings}
+                hostWallet={walletAddress ?? ""}
+              />
             </div>
           </section>
         </div>
@@ -505,7 +515,7 @@ function SectionHeader({
 }: {
   title: string;
   description: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -531,7 +541,7 @@ function SideLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function Stat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between">
       <span className="text-xs text-muted-foreground">{label}</span>

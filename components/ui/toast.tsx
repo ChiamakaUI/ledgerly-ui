@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, type ReactNode, useCallback, createContext, useContext } from "react";
 import { Check, X, AlertTriangle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,24 +19,24 @@ type ToastContextValue = {
   show: (t: Omit<Toast, "id" | "duration"> & { duration?: number }) => void;
 };
 
-const ToastContext = React.createContext<ToastContextValue | null>(null);
+const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function useToast(): ToastContextValue {
-  const ctx = React.useContext(ToastContext);
+  const ctx = useContext(ToastContext);
   if (!ctx) {
     throw new Error("useToast must be used within <ToastProvider>");
   }
   return ctx;
 }
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = React.useState<Toast[]>([]);
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const dismiss = React.useCallback((id: string) => {
+  const dismiss = useCallback((id: string) => {
     setToasts((current) => current.filter((t) => t.id !== id));
   }, []);
 
-  const show = React.useCallback<ToastContextValue["show"]>(
+  const show = useCallback<ToastContextValue["show"]>(
     (t) => {
       const id = Math.random().toString(36).slice(2);
       const duration = t.duration ?? 6000;
@@ -83,7 +83,7 @@ function ToastCard({
   toast: Toast;
   onDismiss: (id: string) => void;
 }) {
-  const icons: Record<ToastKind, React.ReactNode> = {
+  const icons: Record<ToastKind, ReactNode> = {
     success: <Check className="h-4 w-4" strokeWidth={2.5} />,
     error: <X className="h-4 w-4" strokeWidth={2.5} />,
     warning: <AlertTriangle className="h-4 w-4" strokeWidth={2.5} />,

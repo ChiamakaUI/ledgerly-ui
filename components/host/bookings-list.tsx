@@ -1,15 +1,17 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, type ReactNode, useMemo } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check } from "lucide-react";
 import type { Booking, BookingStatus } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { confirmCallCompleted } from "@/lib/api";
-import { ApiError } from "@/lib/http";
-import { useToast } from "@/components/ui/toast";
-import { formatUSDC, formatRelative, shortenAddress } from "@/lib/utils";
+import { Button, useToast, Badge } from "@/components";
+import {
+  confirmCallCompleted,
+  ApiError,
+  formatUSDC,
+  formatRelative,
+  shortenAddress,
+} from "@/lib";
 
 type BookingsListProps = {
   bookings: Booking[];
@@ -18,7 +20,10 @@ type BookingsListProps = {
 
 const STATUS_BADGE: Record<
   BookingStatus,
-  { label: string; variant: "primary" | "success" | "warning" | "muted" | "destructive" }
+  {
+    label: string;
+    variant: "primary" | "success" | "warning" | "muted" | "destructive";
+  }
 > = {
   pending_payment: { label: "Awaiting payment", variant: "warning" },
   paid: { label: "Confirmed", variant: "primary" },
@@ -34,19 +39,19 @@ const TIME_LOCK_MS = 15 * 60 * 1000; // Vidbloq's distribute time-lock
 type Tab = "upcoming" | "past" | "all";
 
 export function BookingsList({ bookings, hostWallet }: BookingsListProps) {
-  const [tab, setTab] = React.useState<Tab>("upcoming");
-  const [confirming, setConfirming] = React.useState<string | null>(null);
-  const [confirmed, setConfirmed] = React.useState<Set<string>>(new Set());
-  const [now, setNow] = React.useState(() => Date.now());
+  const [tab, setTab] = useState<Tab>("upcoming");
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
+  const [now, setNow] = useState(() => Date.now());
   const { show } = useToast();
 
   // Tick every 30s so canConfirm flips automatically when the lock expires.
-  React.useEffect(() => {
+  useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(i);
   }, []);
 
-  const upcoming = React.useMemo(
+  const upcoming = useMemo(
     () =>
       bookings
         .filter(
@@ -64,7 +69,7 @@ export function BookingsList({ bookings, hostWallet }: BookingsListProps) {
     [bookings, now],
   );
 
-  const past = React.useMemo(
+  const past = useMemo(
     () =>
       bookings
         .filter(
@@ -104,7 +109,7 @@ export function BookingsList({ bookings, hostWallet }: BookingsListProps) {
       show({
         kind: "success",
         title: "Funds released",
-        description: `${formatUSDC(updated.amount)} USDC sent to your wallet.`,
+        description: `${formatUSDC(updated.amount, { symbol: false })} USDC sent to your wallet.`,
         action: updated.distributeSignature
           ? {
               label: "View transaction",
@@ -146,7 +151,10 @@ export function BookingsList({ bookings, hostWallet }: BookingsListProps) {
   return (
     <div className="space-y-4">
       <div className="flex gap-1 bg-muted/50 rounded-full p-1 w-fit">
-        <TabButton active={tab === "upcoming"} onClick={() => setTab("upcoming")}>
+        <TabButton
+          active={tab === "upcoming"}
+          onClick={() => setTab("upcoming")}
+        >
           Upcoming <span className="tabular">{upcoming.length}</span>
         </TabButton>
         <TabButton active={tab === "past"} onClick={() => setTab("past")}>
@@ -205,9 +213,7 @@ function BookingRow({
     label: booking.status,
     variant: "muted" as const,
   };
-  const effectiveMeta = isConfirmed
-    ? STATUS_BADGE.completed
-    : meta;
+  const effectiveMeta = isConfirmed ? STATUS_BADGE.completed : meta;
 
   const callerLabel =
     booking.callerName ?? shortenAddress(booking.callerWallet, 4);
@@ -245,7 +251,7 @@ function BookingRow({
         </p>
         <div className="mt-2 flex items-center gap-3 flex-wrap">
           <span className="font-mono text-xs tabular">
-            {formatUSDC(booking.amount)}{" "}
+            {formatUSDC(booking.amount, { symbol: false })}{" "}
             <span className="text-muted-foreground">USDC</span>
           </span>
           {canConfirm && (
@@ -281,7 +287,7 @@ function TabButton({
 }: {
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <button

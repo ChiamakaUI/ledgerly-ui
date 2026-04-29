@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -13,19 +13,18 @@ import {
   XCircle,
 } from "lucide-react";
 import type { Booking, BookingStatus } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cancelBooking, getBooking } from "@/lib/api";
-import { useWallet } from "@/lib/wallet";
+import { Button, Badge, useToast } from "@/components";
 import {
+  cancelBooking,
+  getBooking,
+  useWallet,
   formatCountdown,
   formatFullDateTime,
   formatRelative,
   formatUSDC,
   shortenAddress,
   cn,
-} from "@/lib/utils";
-import { useToast } from "@/components/ui/toast";
+} from "@/lib";
 
 export default function BookingStatusPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,10 +32,10 @@ export default function BookingStatusPage() {
   const { show } = useToast();
   const { address: walletAddress } = useWallet();
 
-  const [booking, setBooking] = React.useState<Booking | null>(null);
-  const [cancelling, setCancelling] = React.useState(false);
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     void (async () => {
       const b = await getBooking(id);
@@ -193,11 +192,11 @@ function StatusHeader({ status }: { status: BookingStatus }) {
 // --- Status cards ---------------------------------------------------------
 
 function PendingPaymentCard({ booking }: { booking: Booking }) {
-  const [countdown, setCountdown] = React.useState(() =>
+  const [countdown, setCountdown] = useState(() =>
     booking.paymentExpiresAt ? formatCountdown(booking.paymentExpiresAt) : "",
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!booking.paymentExpiresAt) return;
     const i = setInterval(
       () => setCountdown(formatCountdown(booking.paymentExpiresAt!)),
@@ -239,11 +238,11 @@ function PendingPaymentCard({ booking }: { booking: Booking }) {
 }
 
 function PaidCard({ booking }: { booking: Booking }) {
-  const [now, setNow] = React.useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
 
   // Tick every 30s so the join button flips on automatically when the
   // window opens — no refresh required.
-  React.useEffect(() => {
+  useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(i);
   }, []);
@@ -434,17 +433,22 @@ function DetailsCard({ booking }: { booking: Booking }) {
           }
         />
       </dl>
+      {booking.sessionId && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 mt-6">
+          <p className="text-xs font-mono uppercase tracking-widest text-primary mb-1">
+            / Group session
+          </p>
+          <p className="text-sm">
+            You&apos;re part of a group call. The host and other participants
+            will join at the scheduled time.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-6 py-3 first:pt-0 last:pb-0">
       <dt className="text-xs font-mono uppercase tracking-wider text-muted-foreground pt-0.5">

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo } from "react";
 import { cn, isSameDay, nextDays } from "@/lib";
 
 interface DatePickerProps {
@@ -16,7 +16,7 @@ export function DatePicker({
   timezone,
   days = 14,
 }: DatePickerProps) {
-  const dates = React.useMemo(() => nextDays(days), [days]);
+  const dates = useMemo(() => nextDays(days), [days]);
 
   return (
     <div

@@ -12,6 +12,12 @@ import type {
   Slot,
   SlotsResponse,
   UpdateHostRequest,
+  BookSessionRequest,
+  BookSessionResponse,
+  CreateSessionRequest,
+  Session,
+  SessionResponse,
+  SessionsListResponse,
 } from "@/types";
 import { apiFetch } from "./http";
 
@@ -242,4 +248,128 @@ export async function joinBookingCall(
   return apiFetch<JoinResponse>(`/api/bookings/${bookingId}/join`, {
     query: name ? { wallet: walletAddress, name } : { wallet: walletAddress },
   });
+}
+
+// ============================================================================
+// Sessions (group calls)
+// ============================================================================
+
+/**
+ * GET /api/sessions/host/:slug — list a host's open sessions.
+ * Public — used on the caller-facing /sessions/[slug] page.
+ */
+export async function listOpenSessions(
+  hostSlug: string,
+  limit = 20,
+  offset = 0,
+): Promise<Session[]> {
+  const res = await apiFetch<SessionsListResponse>(
+    `/api/sessions/host/${hostSlug}`,
+    { query: { limit, offset } },
+  );
+  return res.sessions;
+}
+
+/** GET /api/sessions/:id — session details with spotsRemaining. */
+export async function getSession(id: string): Promise<Session> {
+  const res = await apiFetch<SessionResponse>(`/api/sessions/${id}`);
+  return res.session;
+}
+
+/**
+ * POST /api/sessions — create a new session.
+ * Requires x-wallet-address (host's connected wallet).
+ */
+export async function createSession(
+  walletAddress: string,
+  data: CreateSessionRequest,
+): Promise<Session> {
+  const res = await apiFetch<SessionResponse>(`/api/sessions`, {
+    method: "POST",
+    body: data,
+    walletAddress,
+  });
+  return res.session;
+}
+
+/**
+ * GET /api/sessions/host-dashboard/me — list host's own sessions.
+ * Requires x-wallet-address.
+ */
+export async function listMySessions(
+  walletAddress: string,
+  options?: { upcoming?: boolean; limit?: number; offset?: number },
+): Promise<Session[]> {
+  const query: Record<string, string | number> = {
+    limit: options?.limit ?? 20,
+    offset: options?.offset ?? 0,
+  };
+  if (options?.upcoming !== undefined) {
+    query.upcoming = options.upcoming ? "true" : "false";
+  }
+  const res = await apiFetch<SessionsListResponse>(
+    `/api/sessions/host-dashboard/me`,
+    { query, walletAddress },
+  );
+  return res.sessions;
+}
+
+/**
+ * POST /api/sessions/:id/book — book a spot in a session.
+ * Returns the booking + deposit instruction, just like 1:1 createBooking.
+ */
+export async function bookSession(
+  sessionId: string,
+  data: BookSessionRequest,
+): Promise<BookSessionResponse> {
+  return apiFetch<BookSessionResponse>(`/api/sessions/${sessionId}/book`, {
+    method: "POST",
+    body: data,
+  });
+}
+
+/**
+ * POST /api/sessions/booking/:bookingId/confirm-payment
+ * Sessions have their own confirm-payment endpoint (it lives under
+ * /api/sessions/booking/:id, not /api/bookings/:id), but the response
+ * shape and on-chain flow are identical.
+ */
+export async function confirmSessionPayment(
+  bookingId: string,
+  signature: string,
+): Promise<Booking> {
+  const res = await apiFetch<{ booking: Booking }>(
+    `/api/sessions/booking/${bookingId}/confirm-payment`,
+    { method: "POST", body: { signature } },
+  );
+  return res.booking;
+}
+
+/**
+ * GET /api/sessions/:id/join — get a Vidbloq token for this session.
+ * Backend resolves whether the wallet is a participant or the host
+ * and returns the appropriate token + userType.
+ */
+export async function joinSessionCall(
+  sessionId: string,
+  walletAddress: string,
+  name?: string,
+): Promise<JoinResponse> {
+  return apiFetch<JoinResponse>(`/api/sessions/${sessionId}/join`, {
+    query: name ? { wallet: walletAddress, name } : { wallet: walletAddress },
+  });
+}
+
+/**
+ * POST /api/sessions/:id/cancel — host cancels session.
+ * Backend refunds all paid bookings automatically.
+ */
+export async function cancelSession(
+  sessionId: string,
+  walletAddress: string,
+): Promise<{ session: Session; refundedCount: number }> {
+  return apiFetch<{ session: Session; refundedCount: number }>(
+    `/api/sessions/${sessionId}/cancel`,
+    { method: "POST", walletAddress },
+  );
 }

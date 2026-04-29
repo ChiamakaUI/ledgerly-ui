@@ -2,20 +2,19 @@
 
 export const dynamic = "force-dynamic"; 
 
-import * as React from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { Booking } from "@/types";
-import { listHostBookings } from "@/lib/api";
-import { useWallet } from "@/lib/wallet";
-import { BookingsList } from "@/components/host/bookings-list";
+import { listHostBookings, useWallet } from "@/lib";
+import { BookingsList } from "@/components";
 
 export default function DashboardBookingsPage() {
   const { address: walletAddress, connected } = useWallet();
-  const [bookings, setBookings] = React.useState<Booking[] | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+  const [bookings, setBookings] = useState<Booking[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!walletAddress) {
       setBookings(null);
       return;

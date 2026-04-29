@@ -2,34 +2,38 @@
 
 export const dynamic = "force-dynamic";
 
-import * as React from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import type { AvailabilityRule } from "@/types";
-import { Button } from "@/components/ui/button";
-import { getHostMe, setAvailability as saveAvailabilityApi } from "@/lib/api";
-import { ApiError } from "@/lib/http";
-import { useWallet } from "@/lib/wallet";
-import { useToast } from "@/components/ui/toast";
-import { AvailabilityEditor } from "@/components/host/availability-editor";
+import {
+  getHostMe,
+  setAvailability as saveAvailabilityApi,
+  ApiError,
+  useWallet,
+} from "@/lib";
+import { useToast, AvailabilityEditor, Button } from "@/components";
 
 export default function AvailabilityPage() {
   const router = useRouter();
-  const { address: walletAddress, connected, connecting, connect } = useWallet();
+  const {
+    address: walletAddress,
+    connected,
+    connecting,
+    connect,
+  } = useWallet();
   const { show } = useToast();
 
-  const [initial, setInitial] = React.useState<AvailabilityRule[] | null>(null);
-  const [availability, setAvailability] = React.useState<AvailabilityRule[]>(
-    [],
-  );
-  const [loading, setLoading] = React.useState(true);
-  const [saving, setSaving] = React.useState(false);
-  const [savedAt, setSavedAt] = React.useState<Date | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+  const [initial, setInitial] = useState<AvailabilityRule[] | null>(null);
+  const [availability, setAvailability] = useState<AvailabilityRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Load the host's current availability. Redirect to /setup if not a host.
-  React.useEffect(() => {
+  useEffect(() => {
     if (connecting) return;
     if (!connected || !walletAddress) {
       setLoading(false);
@@ -179,7 +183,7 @@ export default function AvailabilityPage() {
             preview / api payload
           </summary>
           <pre className="mt-3 text-xs font-mono text-muted-foreground overflow-x-auto">
-{JSON.stringify({ rules: availability }, null, 2)}
+            {JSON.stringify({ rules: availability }, null, 2)}
           </pre>
         </details>
       </div>

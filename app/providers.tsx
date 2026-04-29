@@ -1,10 +1,10 @@
 "use client";
 
-import * as React from "react";
+import { type ReactNode } from "react";
 import { VidbloqProvider } from "@vidbloq/react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { createSolanaRpc, createSolanaRpcSubscriptions } from "@solana/kit";
-import { ToastProvider } from "@/components/ui/toast";
+import { ToastProvider } from "@/components";
 
 
 /**
@@ -26,7 +26,7 @@ const SOLANA_WS_URL = SOLANA_RPC_URL.replace(/^http/, "ws");
 const VIDBLOQ_API_KEY = process.env.NEXT_PUBLIC_VIDBLOQ_API_KEY ?? "sk_c061e1d6fa8b1438226b1cc8b8764136";
 const VIDBLOQ_API_SECRET = process.env.NEXT_PUBLIC_VIDBLOQ_API_SECRET ?? "ZHJEEBSlufheOxXnrMdrBp5QepVf+UAVOaLAUKHa+14=";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children }: { children: ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
   if (!appId) {

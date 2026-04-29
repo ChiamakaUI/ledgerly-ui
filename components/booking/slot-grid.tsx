@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import type { Slot } from "@/types";
 import { formatTime, cn } from "@/lib";
 

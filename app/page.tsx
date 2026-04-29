@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button, Badge } from "@/components";
 
 export default function LandingPage() {
   return (
@@ -27,7 +26,7 @@ export default function LandingPage() {
             style={{ animationDelay: "80ms" }}
           >
             Get paid for <span className="italic text-primary">your time</span>,
-            <br className="hidden sm:block" /> settled on Solana.
+            <br className="hidden sm:!block" /> settled on Solana.
           </h1>
 
           <p

@@ -2,17 +2,12 @@
 
 export const dynamic = "force-dynamic"; 
 
-import * as React from "react";
+import { useState, useEffect, ReactNode, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Link as LinkIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useWallet } from "@/lib/wallet";
-import { createHost, getHostMe } from "@/lib/api";
-import { ApiError } from "@/lib/http";
-import { useToast } from "@/components/ui/toast";
+import { Button, Input, Label, useToast } from "@/components";
+import { useWallet, createHost, getHostMe, ApiError } from "@/lib";
 
 const TIMEZONES = [
   "Africa/Lagos",
@@ -42,24 +37,24 @@ export default function SetupPage() {
   const { address, connected, connecting, connect } = useWallet();
   const { show } = useToast();
 
-  const [name, setName] = React.useState("");
-  const [slug, setSlug] = React.useState("");
-  const [rateUsdc, setRateUsdc] = React.useState("5");
-  const [duration, setDuration] = React.useState(30);
-  const [bio, setBio] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [timezone, setTimezone] = React.useState(
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [rateUsdc, setRateUsdc] = useState("5");
+  const [duration, setDuration] = useState(30);
+  const [bio, setBio] = useState("");
+  const [email, setEmail] = useState("");
+  const [timezone, setTimezone] = useState(
     typeof window !== "undefined"
       ? Intl.DateTimeFormat().resolvedOptions().timeZone
       : "UTC",
   );
 
-  const [submitting, setSubmitting] = React.useState(false);
-  const [checking, setChecking] = React.useState(true);
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // If user is already a host, bounce them to the dashboard.
-  React.useEffect(() => {
+  useEffect(() => {
     if (!connected || !address) {
       setChecking(false);
       return;
@@ -103,7 +98,7 @@ export default function SetupPage() {
     return Object.keys(errs).length === 0;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!address) return;
     if (!validate()) return;
@@ -389,6 +384,6 @@ function RequiredDot() {
   return <span className="text-destructive">*</span>;
 }
 
-function FieldError({ children }: { children: React.ReactNode }) {
+function FieldError({ children }: { children: ReactNode }) {
   return <p className="text-xs text-destructive">{children}</p>;
 }

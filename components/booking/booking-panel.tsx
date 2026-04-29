@@ -1,16 +1,17 @@
 "use client";
 
-import * as React from "react";
+import { useState, ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import type { PublicHost, Slot } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { createBooking, confirmPayment } from "@/lib/api";
-import { useWallet } from "@/lib/wallet";
-import { formatUSDC, shortenAddress } from "@/lib/utils";
+import { Button, Input, Label, Badge } from "@/components";
+import {
+  createBooking,
+  confirmPayment,
+  useWallet,
+  formatUSDC,
+  shortenAddress,
+} from "@/lib";
 
 type BookingPanelProps = {
   host: PublicHost;
@@ -23,15 +24,15 @@ type Phase = "review" | "processing" | "success" | "error";
 export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
   const { address, connected, connect, signAndSendTransaction } = useWallet();
 
-  const [name, setName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [phase, setPhase] = React.useState<Phase>("review");
-  const [error, setError] = React.useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = React.useState<{
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phase, setPhase] = useState<Phase>("review");
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
     email?: string;
   }>({});
-  const [bookingId, setBookingId] = React.useState<string | null>(null);
+  const [bookingId, setBookingId] = useState<string | null>(null);
 
   const nameTrimmed = name.trim();
   const emailTrimmed = email.trim();
@@ -254,13 +255,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
   );
 }
 
-function Row({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-xs font-mono uppercase tracking-widest text-muted-foreground shrink-0">

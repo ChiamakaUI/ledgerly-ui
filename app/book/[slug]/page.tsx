@@ -1,7 +1,8 @@
 "use client";
-export const dynamic = "force-dynamic"; 
-import * as React from "react";
+export const dynamic = "force-dynamic";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import type { PublicHost, Slot } from "@/types";
 import { getHost, getSlots, toDateKey } from "@/lib";
 import { HostProfile, DatePicker, SlotGrid, BookingPanel } from "@/components";
@@ -10,17 +11,17 @@ export default function BookHostPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
 
-  const [host, setHost] = React.useState<PublicHost | null>(null);
-  const [slots, setSlots] = React.useState<Slot[]>([]);
-  const [slotsLoading, setSlotsLoading] = React.useState(false);
-  const [selectedDate, setSelectedDate] = React.useState<Date>(() => {
+  const [host, setHost] = useState<PublicHost | null>(null);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
     d.setUTCHours(0, 0, 0, 0);
     return d;
   });
-  const [selectedSlot, setSelectedSlot] = React.useState<Slot | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     void (async () => {
       const h = await getHost(slug);
@@ -31,7 +32,7 @@ export default function BookHostPage() {
     };
   }, [slug]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     setSlotsLoading(true);
     setSelectedSlot(null);
@@ -48,8 +49,8 @@ export default function BookHostPage() {
   }, [slug, selectedDate]);
 
   // On mobile, scroll booking panel into view when a slot is picked.
-  const panelRef = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
     if (
       selectedSlot &&
       typeof window !== "undefined" &&
@@ -78,6 +79,29 @@ export default function BookHostPage() {
                 <div className="h-4 w-3/4 max-w-sm bg-muted/60 rounded" />
               </div>
             </div>
+          )}
+          {host && (
+            <Link
+              href={`/sessions/${slug}`}
+              className="block rounded-xl border border-primary/30 bg-primary/5 p-4 hover:border-primary/50 transition-colors group"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-xs font-mono uppercase tracking-widest text-primary mb-1">
+                    / Group sessions
+                  </p>
+                  <p className="text-sm text-pretty">
+                    Looking for a workshop or masterclass?{" "}
+                    <span className="text-foreground font-medium">
+                      See {host.name}&apos;s group sessions
+                    </span>
+                  </p>
+                </div>
+                <span className="text-primary group-hover:translate-x-1 transition-transform shrink-0">
+                  →
+                </span>
+              </div>
+            </Link>
           )}
 
           <div className="hairline" />

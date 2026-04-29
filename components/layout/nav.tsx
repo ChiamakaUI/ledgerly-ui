@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
@@ -9,8 +9,9 @@ import { useWallet, shortenAddress, cn } from "@/lib";
 
 export default function Nav() {
   const pathname = usePathname();
+  const isCallRoute = pathname.startsWith("/call/");
   const { address, connected, connecting, connect, disconnect } = useWallet();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const routes = [
     // { href: "/", label: "Home" },
@@ -18,9 +19,11 @@ export default function Nav() {
   ];
 
   // Close mobile menu on route change.
-  React.useEffect(() => {
+  useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  if (isCallRoute) return null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -32,9 +35,7 @@ export default function Nav() {
               L
             </span>
           </div>
-          <span className="font-display text-xl tracking-tight">
-            Ledgerly
-          </span>
+          <span className="font-display text-xl tracking-tight">Ledgerly</span>
         </Link>
 
         {/* Desktop nav */}

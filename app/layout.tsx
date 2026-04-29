@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Serif } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -17,7 +17,39 @@ const displaySerif = Instrument_Serif({
 export const metadata: Metadata = {
   title: "Ledgerly — Get paid for your time",
   description:
-    "Book paid calls with experts. Settled on Solana in USDC. No subscriptions, no platform fees hidden in fine print.",
+    "Share a link. Callers pay USDC into escrow when they book. Funds release automatically after the call.",
+  applicationName: "Ledgerly",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Ledgerly",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    title: "Ledgerly — Get paid for your time",
+    description:
+      "On-chain escrow for paid 1:1 calls and group sessions. Settled on Solana.",
+    siteName: "Ledgerly",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ledgerly",
+    description: "Get paid for your time, settled on Solana.",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0d" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({

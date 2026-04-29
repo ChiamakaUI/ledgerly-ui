@@ -2,25 +2,22 @@
 
 export const dynamic = "force-dynamic"; 
 
-import * as React from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StreamRoom } from "@vidbloq/react";
 import type { Booking } from "@/types";
-import { getBooking } from "@/lib/api";
-import { useWallet } from "@/lib/wallet";
-import { CallScreen } from "@/components/call/call-screen";
-import { Button } from "@/components/ui/button";
+import { getBooking, useWallet } from "@/lib";
+import { CallScreen, Button } from "@/components";
 
 export default function CallPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { address, connected, connecting, connect } = useWallet();
 
-  const [booking, setBooking] = React.useState<Booking | null>(null);
-  const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  console.log({booking})
-  React.useEffect(() => {
+  useEffect(() => {
     if (!id) return;
     let cancelled = false;
     void (async () => {
@@ -88,7 +85,7 @@ export default function CallPage() {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="flex flex-col items-center">{children}</div>

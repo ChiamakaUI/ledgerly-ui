@@ -1,6 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Footer() {
+  const pathname = usePathname();
+  const isCallRoute = pathname.startsWith("/call/");
+  if (isCallRoute) return null;
   return (
     <footer className="border-t border-border/60 mt-24">
       <div className="container py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

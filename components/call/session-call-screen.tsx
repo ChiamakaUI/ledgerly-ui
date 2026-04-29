@@ -1,33 +1,30 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StreamView, useStreamContext } from "@vidbloq/react";
-import type { Booking } from "@/types";
-import { joinBookingCall, joinSessionCall } from "@/lib";
+import type { Session } from "@/types";
+import { joinSessionCall } from "@/lib/api";
 import { InCall } from "./in-call";
 
-type CallScreenProps = {
-  booking: Booking;
+type SessionCallScreenProps = {
+  session: Session;
   wallet: string;
 };
 
-export function CallScreen({ booking, wallet }: CallScreenProps) {
+export function SessionCallScreen({ session, wallet }: SessionCallScreenProps) {
   const { token, setToken, setUserType } = useStreamContext();
   const [error, setError] = useState<string | null>(null);
   const fetchedRef = useRef(false);
+
   const scheduledEndAt =
-    new Date(booking.scheduledAt).getTime() + booking.durationMinutes * 60_000;
+    new Date(session.scheduledAt).getTime() +
+    session.durationMinutes * 60_000;
+
   useEffect(() => {
     if (fetchedRef.current || token) return;
     fetchedRef.current = true;
 
-    // Don't send a name override — the backend picks the right name
-    // (caller's or host's) based on which wallet is joining.
-    const fetchToken = booking.sessionId
-      ? joinSessionCall(booking.sessionId, wallet)
-      : joinBookingCall(booking.id, wallet);
-
-    fetchToken
+    joinSessionCall(session.id, wallet)
       .then(({ token, userType }) => {
         setUserType(userType);
         setToken(token);
@@ -35,7 +32,7 @@ export function CallScreen({ booking, wallet }: CallScreenProps) {
       .catch((e) => {
         setError(e instanceof Error ? e.message : "Failed to join call");
       });
-  }, [booking, wallet, token, setToken, setUserType]);
+  }, [session, wallet, token, setToken, setUserType]);
 
   if (error) {
     return (
@@ -44,10 +41,10 @@ export function CallScreen({ booking, wallet }: CallScreenProps) {
           <p className="font-display text-2xl">Couldn&apos;t join the call</p>
           <p className="text-sm text-muted-foreground">{error}</p>
           <a
-            href={`/booking/${booking.id}`}
+            href="/dashboard/sessions"
             className="text-sm text-primary hover:underline"
           >
-            ← Back to booking
+            ← Back to sessions
           </a>
         </div>
       </div>
@@ -58,7 +55,7 @@ export function CallScreen({ booking, wallet }: CallScreenProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-sm text-muted-foreground">
-          Connecting to call with {booking.hostName}…
+          Connecting to {session.title}…
         </p>
       </div>
     );

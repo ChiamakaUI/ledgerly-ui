@@ -1,18 +1,16 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import type { AvailabilityRule } from "@/types";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button, Input, Switch } from "@/components";
+import { cn } from "@/lib";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 interface Range {
   startTime: string; // HH:MM
-  endTime: string;   // HH:MM
+  endTime: string; // HH:MM
 }
 
 interface DayState {
@@ -48,15 +46,21 @@ export function AvailabilityEditor({
   initial,
   onChange,
 }: AvailabilityEditorProps) {
-  const [state, setState] = React.useState<Record<number, DayState>>(() => {
+  const [state, setState] = useState<Record<number, DayState>>(() => {
     const s: Record<number, DayState> = {};
     for (let i = 0; i < 7; i++) {
       const ranges = initial
         .filter((a) => a.dayOfWeek === i)
-        .map((a) => ({ startTime: hhmm(a.startTime), endTime: hhmm(a.endTime) }));
+        .map((a) => ({
+          startTime: hhmm(a.startTime),
+          endTime: hhmm(a.endTime),
+        }));
       s[i] = {
         active: ranges.length > 0,
-        ranges: ranges.length > 0 ? ranges : [{ startTime: "09:00", endTime: "17:00" }],
+        ranges:
+          ranges.length > 0
+            ? ranges
+            : [{ startTime: "09:00", endTime: "17:00" }],
       };
     }
     return s;
@@ -88,7 +92,10 @@ export function AvailabilityEditor({
       ...state,
       [dow]: {
         ...state[dow],
-        ranges: [...state[dow].ranges, { startTime: "13:00", endTime: "17:00" }],
+        ranges: [
+          ...state[dow].ranges,
+          { startTime: "13:00", endTime: "17:00" },
+        ],
       },
     });
   };
@@ -99,7 +106,10 @@ export function AvailabilityEditor({
       ...state,
       [dow]: {
         ...state[dow],
-        ranges: ranges.length > 0 ? ranges : [{ startTime: "09:00", endTime: "17:00" }],
+        ranges:
+          ranges.length > 0
+            ? ranges
+            : [{ startTime: "09:00", endTime: "17:00" }],
         active: ranges.length > 0,
       },
     });

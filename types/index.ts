@@ -163,6 +163,8 @@ export interface Booking {
   hostName: string;
   hostSlug: string;
   hostWallet?: string;
+
+  sessionId: string | null;
 }
 
 export interface CreateBookingRequest {
@@ -233,4 +235,80 @@ export interface HostMeResponse {
 export interface SlotsResponse {
   date: string;
   slots: Slot[];
+}
+
+// ============================================================================
+// Sessions (group calls)
+// ============================================================================
+
+export type SessionStatus =
+  | "open"
+  | "full"
+  | "active"
+  | "completed"
+  | "cancelled";
+
+export type SessionType = "group" | "one_on_one";
+
+/**
+ * A group session — a scheduled event multiple callers can book into.
+ * Distinct from a Booking (which is one caller's reservation in a session).
+ */
+export interface Session {
+  id: string;
+  hostId: string;
+  title: string;
+  description: string | null;
+  scheduledAt: Iso;
+  durationMinutes: number;
+  rate: UsdcAmount | string; // Backend returns string from BIGINT; tolerate both
+  maxParticipants: number;
+  sessionType: SessionType;
+  vidbloqRoom: string | null;
+  status: SessionStatus;
+  createdAt: Iso;
+  updatedAt: Iso;
+
+  // Joined fields — present on most session reads
+  hostName: string;
+  hostSlug: string;
+  hostWallet?: string;
+  feePercentage?: number;
+
+  // Computed — only present on GET /api/sessions/:id and /api/sessions/host/:slug
+  currentParticipants?: number;
+  spotsRemaining?: number;
+}
+
+export interface CreateSessionRequest {
+  hostSlug: string;
+  title: string;
+  description?: string;
+  scheduledAt: Iso;
+  durationMinutes: number;
+  maxParticipants: number;
+  sessionType?: SessionType;
+  rate?: UsdcAmount;
+}
+
+export interface BookSessionRequest {
+  callerWallet: string;
+  callerName: string;
+  callerEmail: string;
+}
+
+/**
+ * Response from POST /api/sessions/:id/book.
+ * Same shape as 1:1 CreateBookingResponse, plus the session object for context.
+ */
+export interface BookSessionResponse extends CreateBookingResponse {
+  session: Session;
+}
+
+export interface SessionsListResponse {
+  sessions: Session[];
+}
+
+export interface SessionResponse {
+  session: Session;
 }

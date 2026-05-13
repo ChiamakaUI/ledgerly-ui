@@ -5,7 +5,15 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, ReactNode, ElementType } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Calendar, Clock, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Check,
+  Clock,
+  Gift,
+  Users,
+} from "lucide-react";
 import type { Session } from "@/types";
 import { Button, Input, Label, Badge, useToast } from "@/components";
 import {
@@ -26,18 +34,23 @@ export default function BookSessionPage() {
   const { address, connected, connect, signAndSendTransaction } = useWallet();
   const { show } = useToast();
 
-  const [session, setSession] =useState<Session | null>(null);
-  const [loadError, setLoadError] =useState<string | null>(null);
-  const [name, setName] =useState("");
-  const [email, setEmail] =useState("");
-  const [phase, setPhase] =useState<Phase>("review");
-  const [error, setError] =useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] =useState<{
+  const [session, setSession] = useState<Session | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [isGift, setIsGift] = useState(false);
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [phase, setPhase] = useState<Phase>("review");
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
     email?: string;
+    recipientName?: string;
+    recipientEmail?: string;
   }>({});
 
-useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
@@ -55,19 +68,35 @@ useEffect(() => {
 
   const nameTrimmed = name.trim();
   const emailTrimmed = email.trim();
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed);
+  const recipientNameTrimmed = recipientName.trim();
+  const recipientEmailTrimmed = recipientEmail.trim();
+  const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
   const canPay =
     !!session &&
     nameTrimmed.length > 0 &&
-    emailTrimmed.length > 0 &&
-    emailValid &&
+    isValidEmail(emailTrimmed) &&
+    (!isGift ||
+      (recipientNameTrimmed.length > 0 &&
+        isValidEmail(recipientEmailTrimmed))) &&
     phase !== "processing";
 
   function validate(): boolean {
     const errs: typeof fieldErrors = {};
     if (!nameTrimmed) errs.name = "Your name is required.";
     if (!emailTrimmed) errs.email = "Your email is required.";
-    else if (!emailValid) errs.email = "Please enter a valid email.";
+    else if (!isValidEmail(emailTrimmed))
+      errs.email = "Please enter a valid email.";
+
+    if (isGift) {
+      if (!recipientNameTrimmed)
+        errs.recipientName = "Recipient name is required.";
+      if (!recipientEmailTrimmed)
+        errs.recipientEmail = "Recipient email is required.";
+      else if (!isValidEmail(recipientEmailTrimmed))
+        errs.recipientEmail = "Please enter a valid email.";
+    }
+
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -84,13 +113,20 @@ useEffect(() => {
         callerWallet: address,
         callerName: nameTrimmed,
         callerEmail: emailTrimmed,
+        ...(isGift && {
+          isGift: true,
+          participantName: recipientNameTrimmed,
+          participantEmail: recipientEmailTrimmed,
+        }),
       });
       const signature = await signAndSendTransaction(depositInstruction);
       await confirmSessionPayment(booking.id, signature);
       show({
         kind: "success",
-        title: "Spot reserved",
-        description: `You're booked for ${session.title}.`,
+        title: isGift ? "Gift sent" : "Spot reserved",
+        description: isGift
+          ? `We've emailed ${recipientNameTrimmed} a link to claim their spot.`
+          : `You're booked for ${session.title}.`,
       });
       router.push(`/booking/${booking.id}`);
     } catch (e) {
@@ -134,6 +170,7 @@ useEffect(() => {
   const isFull = spots === 0;
   const isPast = scheduled.getTime() < Date.now();
   const cantBook = isFull || isPast || session.status !== "open";
+  const rate = formatUSDC(session.rate, { symbol: false });
 
   return (
     <div className="container py-6 md:py-10 lg:py-16">
@@ -185,9 +222,7 @@ useEffect(() => {
               up to {session.maxParticipants} participants
             </DetailRow>
             <DetailRow label="Cost">
-              <span className="font-mono tabular">
-                {formatUSDC(session.rate, { symbol: false })}
-              </span>{" "}
+              <span className="font-mono tabular">{rate}</span>{" "}
               <span className="text-xs text-muted-foreground">USDC</span>
             </DetailRow>
           </dl>
@@ -206,7 +241,9 @@ useEffect(() => {
           ) : (
             <div className="mt-6 space-y-4 border-t border-border pt-6">
               <div className="space-y-1.5">
-                <Label htmlFor="caller-name">Your name</Label>
+                <Label htmlFor="caller-name">
+                  {isGift ? "Your name (sender)" : "Your name"}
+                </Label>
                 <Input
                   id="caller-name"
                   value={name}
@@ -215,7 +252,7 @@ useEffect(() => {
                     if (fieldErrors.name)
                       setFieldErrors((f) => ({ ...f, name: undefined }));
                   }}
-                  placeholder="Ada Obi"
+                  placeholder={isGift ? "Alice" : "Ada Obi"}
                   disabled={phase === "processing"}
                   aria-invalid={!!fieldErrors.name}
                 />
@@ -224,7 +261,9 @@ useEffect(() => {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="caller-email">Email</Label>
+                <Label htmlFor="caller-email">
+                  {isGift ? "Your email" : "Email"}
+                </Label>
                 <Input
                   id="caller-email"
                   type="email"
@@ -245,10 +284,103 @@ useEffect(() => {
                     {fieldErrors.email}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  We&apos;ll send the call link here.
-                </p>
+                {!isGift && (
+                  <p className="text-xs text-muted-foreground">
+                    We&apos;ll send the call link here.
+                  </p>
+                )}
               </div>
+
+              {/* Gift toggle */}
+              <div className="mt-6 pt-6 border-t border-border">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative pt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={isGift}
+                      onChange={(e) => setIsGift(e.target.checked)}
+                      disabled={phase === "processing"}
+                      className="peer sr-only"
+                    />
+                    <div className="h-5 w-5 rounded border-2 border-input peer-checked:border-primary peer-checked:bg-primary transition-colors grid place-items-center">
+                      {isGift && (
+                        <Check
+                          className="h-3 w-3 text-primary-foreground"
+                          strokeWidth={3}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 text-sm font-medium group-hover:text-foreground">
+                      <Gift className="h-3.5 w-3.5" />
+                      Gift this to someone
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 text-pretty">
+                      You pay, they attend. We&apos;ll email them a link to
+                      claim it.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {isGift && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipient-name">Recipient name</Label>
+                    <Input
+                      id="recipient-name"
+                      value={recipientName}
+                      onChange={(e) => {
+                        setRecipientName(e.target.value);
+                        if (fieldErrors.recipientName)
+                          setFieldErrors((f) => ({
+                            ...f,
+                            recipientName: undefined,
+                          }));
+                      }}
+                      placeholder="Bob"
+                      disabled={phase === "processing"}
+                      aria-invalid={!!fieldErrors.recipientName}
+                    />
+                    {fieldErrors.recipientName && (
+                      <p className="text-xs text-destructive">
+                        {fieldErrors.recipientName}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipient-email">Recipient email</Label>
+                    <Input
+                      id="recipient-email"
+                      type="email"
+                      inputMode="email"
+                      value={recipientEmail}
+                      onChange={(e) => {
+                        setRecipientEmail(e.target.value);
+                        if (fieldErrors.recipientEmail)
+                          setFieldErrors((f) => ({
+                            ...f,
+                            recipientEmail: undefined,
+                          }));
+                      }}
+                      placeholder="bob@example.com"
+                      disabled={phase === "processing"}
+                      aria-invalid={!!fieldErrors.recipientEmail}
+                    />
+                    {fieldErrors.recipientEmail ? (
+                      <p className="text-xs text-destructive">
+                        {fieldErrors.recipientEmail}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        They&apos;ll get a link to claim this gift and join the
+                        call.
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
 
               {error && (
                 <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3">
@@ -276,10 +408,12 @@ useEffect(() => {
                   {phase === "processing" ? (
                     "Confirming on Solana…"
                   ) : (
-                    <>
-                      Pay {formatUSDC(session.rate, { symbol: false })} USDC and reserve
+                    <span className="inline-flex items-center gap-2">
+                      {isGift
+                        ? `Gift ${rate} USDC`
+                        : `Pay ${rate} USDC and reserve`}
                       <ArrowRight className="h-4 w-4" />
-                    </>
+                    </span>
                   )}
                 </Button>
               )}
@@ -302,9 +436,9 @@ function DetailRow({
   label,
   children,
 }: {
-  icon?:ElementType;
+  icon?: ElementType;
   label: string;
-  children:ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="flex items-start gap-3">

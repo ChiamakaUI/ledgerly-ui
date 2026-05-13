@@ -18,6 +18,7 @@ import type {
   Session,
   SessionResponse,
   SessionsListResponse,
+  Gift
 } from "@/types";
 import { apiFetch } from "./http";
 
@@ -371,5 +372,34 @@ export async function cancelSession(
   return apiFetch<{ session: Session; refundedCount: number }>(
     `/api/sessions/${sessionId}/cancel`,
     { method: "POST", walletAddress },
+  );
+}
+
+// ============================================================================
+// Gift claim flow
+// ============================================================================
+
+/**
+ * GET /api/bookings/gift/claim/:code — fetch gift details by claim code.
+ * Public — no auth needed. Recipient lands here from email link.
+ */
+export async function getGiftByClaimCode(code: string): Promise<Gift> {
+  const res = await apiFetch<{ gift: Gift }>(
+    `/api/bookings/gift/claim/${code}`,
+  );
+  return res.gift;
+}
+
+/**
+ * POST /api/bookings/gift/claim/:code — bind recipient wallet to gift.
+ * Returns the now-claimed booking with participant_wallet set.
+ */
+export async function claimGift(
+  code: string,
+  wallet: string,
+): Promise<{ booking: Booking; message: string }> {
+  return apiFetch<{ booking: Booking; message: string }>(
+    `/api/bookings/gift/claim/${code}`,
+    { method: "POST", body: { wallet } },
   );
 }

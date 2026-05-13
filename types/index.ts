@@ -165,6 +165,32 @@ export interface Booking {
   hostWallet?: string;
 
   sessionId: string | null;
+
+  // Gift fields — present when this booking was paid as a gift
+  isGift: boolean;
+  participantWallet: string | null;  // bound when participant claims
+  participantName: string | null;
+  participantEmail: string | null;
+  giftClaimCode: string | null;       // generated for gift bookings
+  giftClaimedAt: Iso | null;   
+}
+
+/**
+ * Public-safe gift details returned by GET /api/bookings/gift/claim/:code.
+ * Matches the actual backend response from getGiftByClaimCode.
+ */
+export interface Gift {
+  id: string;                          // the booking ID
+  hostName: string;
+  hostSlug: string;
+  scheduledAt: Iso;
+  durationMinutes: number;
+  callerName: string | null;           // who sent the gift (the payer)
+  participantName: string | null;
+  isGift: boolean;
+  giftClaimedAt: Iso | null;
+  status: BookingStatus;
+  sessionId: string | null;
 }
 
 export interface CreateBookingRequest {
@@ -173,6 +199,11 @@ export interface CreateBookingRequest {
   callerWallet: string;
   callerName?: string;
   callerEmail?: string;
+
+  // Gift fields — required if isGift is true
+  isGift?: boolean;
+  participantName?: string;
+  participantEmail?: string;
 }
 
 /**
@@ -295,6 +326,10 @@ export interface BookSessionRequest {
   callerWallet: string;
   callerName: string;
   callerEmail: string;
+  // Gift fields
+  isGift?: boolean;
+  participantName?: string;
+  participantEmail?: string;
 }
 
 /**

@@ -1,17 +1,11 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Gift } from "lucide-react";
 import type { PublicHost, Slot } from "@/types";
 import { Button, Input, Label, Badge } from "@/components";
-import {
-  createBooking,
-  confirmPayment,
-  useWallet,
-  formatUSDC,
-  shortenAddress,
-} from "@/lib";
+import { createBooking, confirmPayment, useWallet, formatUSDC, shortenAddress } from "@/lib";
 
 type BookingPanelProps = {
   host: PublicHost;
@@ -24,35 +18,53 @@ type Phase = "review" | "processing" | "success" | "error";
 export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
   const { address, connected, connect, signAndSendTransaction } = useWallet();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phase, setPhase] = useState<Phase>("review");
-  const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [isGift, setIsGift] = React.useState(false);
+  const [recipientName, setRecipientName] = React.useState("");
+  const [recipientEmail, setRecipientEmail] = React.useState("");
+  const [phase, setPhase] = React.useState<Phase>("review");
+  const [error, setError] = React.useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = React.useState<{
     name?: string;
     email?: string;
+    recipientName?: string;
+    recipientEmail?: string;
   }>({});
-  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [bookingId, setBookingId] = React.useState<string | null>(null);
 
   const nameTrimmed = name.trim();
   const emailTrimmed = email.trim();
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed);
+  const recipientNameTrimmed = recipientName.trim();
+  const recipientEmailTrimmed = recipientEmail.trim();
+  const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
   const canPay =
     !!slot &&
     nameTrimmed.length > 0 &&
-    emailTrimmed.length > 0 &&
-    emailValid &&
+    isValidEmail(emailTrimmed) &&
+    (!isGift ||
+      (recipientNameTrimmed.length > 0 &&
+        isValidEmail(recipientEmailTrimmed))) &&
     phase !== "processing";
 
-  // `rate` is the numeric USDC amount without symbol. We add "USDC" once,
-  // next to it — never bake it into the number.
   const rate = formatUSDC(host.rate, { symbol: false });
 
   function validate(): boolean {
     const errs: typeof fieldErrors = {};
     if (!nameTrimmed) errs.name = "Your name is required.";
     if (!emailTrimmed) errs.email = "Your email is required.";
-    else if (!emailValid) errs.email = "Please enter a valid email.";
+    else if (!isValidEmail(emailTrimmed)) errs.email = "Please enter a valid email.";
+
+    if (isGift) {
+      if (!recipientNameTrimmed)
+        errs.recipientName = "Recipient name is required.";
+      if (!recipientEmailTrimmed)
+        errs.recipientEmail = "Recipient email is required.";
+      else if (!isValidEmail(recipientEmailTrimmed))
+        errs.recipientEmail = "Please enter a valid email.";
+    }
+
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -71,6 +83,11 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
         callerWallet: address,
         callerName: nameTrimmed,
         callerEmail: emailTrimmed,
+        ...(isGift && {
+          isGift: true,
+          participantName: recipientNameTrimmed,
+          participantEmail: recipientEmailTrimmed,
+        }),
       });
       setBookingId(created.id);
 
@@ -87,7 +104,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
     }
   }
 
-  // Empty state.
+  // Empty state
   if (!slot && phase !== "success") {
     return (
       <aside className="rounded-2xl border border-border bg-card p-6">
@@ -101,7 +118,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
     );
   }
 
-  // Success state.
+  // Success state
   if (phase === "success" && bookingId) {
     return (
       <aside className="rounded-2xl border border-primary/30 bg-primary/5 p-6">
@@ -114,10 +131,17 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
           </div>
           <div>
             <p className="font-display text-2xl tracking-tight">
-              You&apos;re on the calendar.
+              {isGift ? "Gift sent!" : "You're on the calendar."}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Booking confirmed with {host.name}
+              {isGift ? (
+                <>
+                  We&apos;ve emailed {recipientNameTrimmed} a link to claim
+                  their session.
+                </>
+              ) : (
+                <>Booking confirmed with {host.name}</>
+              )}
             </p>
           </div>
         </div>
@@ -131,7 +155,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
     );
   }
 
-  // Active review + pay state.
+  // Active form state
   const scheduledFor = new Date(slot!.startTime);
   const formattedDate = scheduledFor.toLocaleString("en-US", {
     weekday: "long",
@@ -143,7 +167,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
   });
 
   return (
-    <aside className="rounded-2xl border border-border bg-card p-5 sm:!p-6">
+    <aside className="rounded-2xl border border-border bg-card p-5 sm:p-6">
       <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
         / Review booking
       </p>
@@ -163,9 +187,41 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
         />
       </dl>
 
+      {/* Gift toggle */}
+      <div className="mt-6 pt-6 border-t border-border">
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <div className="relative pt-0.5">
+            <input
+              type="checkbox"
+              checked={isGift}
+              onChange={(e) => setIsGift(e.target.checked)}
+              disabled={phase === "processing"}
+              className="peer sr-only"
+            />
+            <div className="h-5 w-5 rounded border-2 border-input peer-checked:border-primary peer-checked:bg-primary transition-colors grid place-items-center">
+              {isGift && (
+                <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
+              )}
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-1.5 text-sm font-medium group-hover:text-foreground">
+              <Gift className="h-3.5 w-3.5" />
+              Gift this to someone
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5 text-pretty">
+              You pay, they attend. We&apos;ll email them a link to claim it.
+            </p>
+          </div>
+        </label>
+      </div>
+
+      {/* Form */}
       <div className="mt-6 space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="caller-name">Name</Label>
+          <Label htmlFor="caller-name">
+            {isGift ? "Your name (sender)" : "Name"}
+          </Label>
           <Input
             id="caller-name"
             value={name}
@@ -174,7 +230,7 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
               if (fieldErrors.name)
                 setFieldErrors((f) => ({ ...f, name: undefined }));
             }}
-            placeholder="Ada Obi"
+            placeholder={isGift ? "Alice" : "Ada Obi"}
             disabled={phase === "processing"}
             aria-invalid={!!fieldErrors.name}
           />
@@ -183,7 +239,9 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
           )}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="caller-email">Email</Label>
+          <Label htmlFor="caller-email">
+            {isGift ? "Your email" : "Email"}
+          </Label>
           <Input
             id="caller-email"
             type="email"
@@ -202,10 +260,69 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
           {fieldErrors.email && (
             <p className="text-xs text-destructive">{fieldErrors.email}</p>
           )}
-          <p className="text-xs text-muted-foreground">
-            We&apos;ll send the call link here.
-          </p>
+          {!isGift && (
+            <p className="text-xs text-muted-foreground">
+              We&apos;ll send the call link here.
+            </p>
+          )}
         </div>
+
+        {isGift && (
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor="recipient-name">Recipient name</Label>
+              <Input
+                id="recipient-name"
+                value={recipientName}
+                onChange={(e) => {
+                  setRecipientName(e.target.value);
+                  if (fieldErrors.recipientName)
+                    setFieldErrors((f) => ({
+                      ...f,
+                      recipientName: undefined,
+                    }));
+                }}
+                placeholder="Bob"
+                disabled={phase === "processing"}
+                aria-invalid={!!fieldErrors.recipientName}
+              />
+              {fieldErrors.recipientName && (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.recipientName}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="recipient-email">Recipient email</Label>
+              <Input
+                id="recipient-email"
+                type="email"
+                inputMode="email"
+                value={recipientEmail}
+                onChange={(e) => {
+                  setRecipientEmail(e.target.value);
+                  if (fieldErrors.recipientEmail)
+                    setFieldErrors((f) => ({
+                      ...f,
+                      recipientEmail: undefined,
+                    }));
+                }}
+                placeholder="bob@example.com"
+                disabled={phase === "processing"}
+                aria-invalid={!!fieldErrors.recipientEmail}
+              />
+              {fieldErrors.recipientEmail ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.recipientEmail}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  They&apos;ll get a link to claim this gift and join the call.
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {error && (
@@ -233,12 +350,10 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
             disabled={!canPay}
           >
             {phase === "processing" ? (
-              <span className="inline-flex items-center gap-2">
-                <Spinner /> Confirming on Solana…
-              </span>
+              "Confirming on Solana…"
             ) : (
               <span className="inline-flex items-center gap-2">
-                Pay {rate} USDC
+                {isGift ? `Gift ${rate} USDC` : `Pay ${rate} USDC`}
                 <ArrowRight className="h-4 w-4" />
               </span>
             )}
@@ -255,7 +370,13 @@ export function BookingPanel({ host, slot, onBooked }: BookingPanelProps) {
   );
 }
 
-function Row({ label, value }: { label: string; value: ReactNode }) {
+function Row({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-xs font-mono uppercase tracking-widest text-muted-foreground shrink-0">
@@ -265,30 +386,5 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
         {value}
       </dd>
     </div>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg
-      className="h-4 w-4 animate-spin"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-      />
-    </svg>
   );
 }

@@ -215,8 +215,12 @@ function BookingRow({
   };
   const effectiveMeta = isConfirmed ? STATUS_BADGE.completed : meta;
 
-  const callerLabel =
-    booking.callerName ?? shortenAddress(booking.callerWallet, 4);
+  // const callerLabel =
+  //   booking.callerName ?? shortenAddress(booking.callerWallet, 4);
+  const displayName =
+    booking.isGift && booking.participantName
+      ? `${booking.participantName} (gift)`
+      : (booking.callerName ?? shortenAddress(booking.callerWallet, 4));
 
   return (
     <div className="flex items-start gap-6 p-5 flex-wrap md:flex-nowrap">
@@ -231,7 +235,12 @@ function BookingRow({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-medium text-sm truncate">{callerLabel}</p>
+          <p className="font-medium text-sm truncate">{displayName}</p>
+          {booking.isGift && booking.callerName && (
+            <p className="text-xs text-muted-foreground">
+              Paid by {booking.callerName}
+            </p>
+          )}
           <Badge variant={effectiveMeta.variant}>{effectiveMeta.label}</Badge>
         </div>
         <p className="text-xs text-muted-foreground mt-1">

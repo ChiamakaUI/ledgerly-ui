@@ -26,6 +26,8 @@ import {
   cn,
 } from "@/lib";
 
+type ViewerRole = "payer" | "participant" | "neither" | null;
+
 export default function BookingStatusPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -46,9 +48,21 @@ export default function BookingStatusPage() {
     };
   }, [id]);
 
+  const viewerRole: ViewerRole = !walletAddress
+    ? null
+    : !booking
+      ? null
+      : booking.callerWallet === walletAddress
+        ? "payer"
+        : booking.participantWallet === walletAddress
+          ? "participant"
+          : "neither";
+
   const handleCancel = async () => {
     if (!booking) return;
-    const cancelerWallet = walletAddress ?? booking.callerWallet;
+    // For gift bookings, only the payer can cancel.
+    // The refund always goes to the original caller wallet.
+    const cancelerWallet = booking.callerWallet;
     if (!cancelerWallet) return;
     setCancelling(true);
     try {
@@ -88,6 +102,12 @@ export default function BookingStatusPage() {
     );
   }
 
+  // For gift bookings, only the payer should see the cancel button.
+  // Non-gift bookings: any authenticated user (typically the caller) can cancel.
+  const canShowCancel =
+    (booking.status === "paid" || booking.status === "active") &&
+    (!booking.isGift || viewerRole === "payer");
+
   return (
     <div className="container py-6 md:!py-10 lg:!py-16">
       <div className="max-w-2xl mx-auto">
@@ -101,12 +121,16 @@ export default function BookingStatusPage() {
 
         <StatusHeader status={booking.status} />
 
+        {booking.isGift && (
+          <GiftContextBanner booking={booking} viewerRole={viewerRole} />
+        )}
+
         <div className="mt-8 space-y-6">
           {booking.status === "pending_payment" && (
             <PendingPaymentCard booking={booking} />
           )}
           {(booking.status === "paid" || booking.status === "active") && (
-            <PaidCard booking={booking} />
+            <PaidCard booking={booking} viewerRole={viewerRole} />
           )}
           {booking.status === "completed" && (
             <CompletedCard booking={booking} />
@@ -118,7 +142,7 @@ export default function BookingStatusPage() {
           <DetailsCard booking={booking} />
 
           <div className="flex flex-wrap gap-3 justify-end pt-2">
-            {(booking.status === "paid" || booking.status === "active") && (
+            {canShowCancel && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -189,6 +213,75 @@ function StatusHeader({ status }: { status: BookingStatus }) {
   );
 }
 
+// --- Gift context banner --------------------------------------------------
+
+function GiftContextBanner({
+  booking,
+  viewerRole,
+}: {
+  booking: Booking;
+  viewerRole: ViewerRole;
+}) {
+  if (viewerRole === "payer") {
+    const claimed = !!booking.giftClaimedAt;
+    return (
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 mt-6">
+        <p className="text-xs font-mono uppercase tracking-widest text-primary mb-1">
+          / Gift booking
+        </p>
+        <p className="text-sm text-pretty">
+          You gifted this session to{" "}
+          <span className="font-medium">
+            {booking.participantName ?? "your recipient"}
+          </span>
+          {claimed ? (
+            <> — they&apos;ve claimed it and can join when it&apos;s time.</>
+          ) : booking.participantEmail ? (
+            <>
+              . We&apos;ve emailed{" "}
+              <span className="font-mono text-xs">
+                {booking.participantEmail}
+              </span>{" "}
+              a link to claim it.
+            </>
+          ) : (
+            <>. They&apos;ll receive a claim link by email.</>
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  if (viewerRole === "participant") {
+    return (
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 mt-6">
+        <p className="text-xs font-mono uppercase tracking-widest text-primary mb-1">
+          / Gifted to you
+        </p>
+        <p className="text-sm">
+          {booking.callerName
+            ? `${booking.callerName} gifted you this session.`
+            : "You received this session as a gift."}{" "}
+          Join when it&apos;s time.
+        </p>
+      </div>
+    );
+  }
+
+  // viewerRole === "neither" or null
+  return (
+    <div className="rounded-xl border border-warning/40 bg-warning/5 p-4 mt-6">
+      <p className="text-xs font-mono uppercase tracking-widest text-warning-foreground mb-1">
+        / Gift booking
+      </p>
+      <p className="text-sm text-pretty">
+        This is a gift booking. Sign in with the wallet that paid for it or the
+        wallet that received it to manage or join the call.
+      </p>
+    </div>
+  );
+}
+
 // --- Status cards ---------------------------------------------------------
 
 function PendingPaymentCard({ booking }: { booking: Booking }) {
@@ -237,11 +330,15 @@ function PendingPaymentCard({ booking }: { booking: Booking }) {
   );
 }
 
-function PaidCard({ booking }: { booking: Booking }) {
+function PaidCard({
+  booking,
+  viewerRole,
+}: {
+  booking: Booking;
+  viewerRole: ViewerRole;
+}) {
   const [now, setNow] = useState(() => Date.now());
 
-  // Tick every 30s so the join button flips on automatically when the
-  // window opens — no refresh required.
   useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(i);
@@ -251,7 +348,11 @@ function PaidCard({ booking }: { booking: Booking }) {
   const joinOpensAt = scheduledMs - 5 * 60 * 1000;
   const joinClosesAt =
     scheduledMs + booking.durationMinutes * 60 * 1000 + 15 * 60 * 1000;
-  const canJoin = now >= joinOpensAt && now <= joinClosesAt;
+  const inJoinWindow = now >= joinOpensAt && now <= joinClosesAt;
+
+  // For gift bookings, only the participant can join.
+  // For regular bookings, the caller (= viewer) can join.
+  const canViewerJoin = !booking.isGift || viewerRole === "participant";
 
   return (
     <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 md:p-8 relative overflow-hidden">
@@ -278,7 +379,12 @@ function PaidCard({ booking }: { booking: Booking }) {
           </div>
         </div>
         <div className="w-full md:!w-auto">
-          {canJoin ? (
+          {!canViewerJoin ? (
+            <p className="text-sm text-muted-foreground text-right md:!text-left">
+              {booking.participantName ?? "Your recipient"} can join the call
+              when it&apos;s time.
+            </p>
+          ) : inJoinWindow ? (
             <Button
               asChild
               size="lg"
@@ -414,14 +520,30 @@ function DetailsCard({ booking }: { booking: Booking }) {
           }
         />
         {booking.callerName && (
-          <DetailRow label="Caller" value={booking.callerName} />
+          <DetailRow
+            label={booking.isGift ? "Sender" : "Caller"}
+            value={booking.callerName}
+          />
         )}
         {booking.callerWallet && (
           <DetailRow
-            label="Caller wallet"
+            label={booking.isGift ? "Sender wallet" : "Caller wallet"}
             value={
               <span className="font-mono text-xs">
                 {shortenAddress(booking.callerWallet, 6)}
+              </span>
+            }
+          />
+        )}
+        {booking.isGift && booking.participantName && (
+          <DetailRow label="Recipient" value={booking.participantName} />
+        )}
+        {booking.isGift && booking.participantWallet && (
+          <DetailRow
+            label="Recipient wallet"
+            value={
+              <span className="font-mono text-xs">
+                {shortenAddress(booking.participantWallet, 6)}
               </span>
             }
           />

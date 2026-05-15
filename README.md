@@ -4,7 +4,8 @@ A paid video call booking platform on Solana. Hosts set availability and rates, 
 
 **Live:** [ledgerl.netlify.app](https://ledgerl.netlify.app) · devnet
 
-![Booking flow](./docs/hero.png)
+<img width="1434" height="746" alt="Screenshot 2026-05-15 at 21 46 34" src="https://github.com/user-attachments/assets/26d8131f-4469-4dc5-80a9-d5b847a881ba" />
+
 
 ## Features
 

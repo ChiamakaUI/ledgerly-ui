@@ -2,7 +2,7 @@
 
 A paid video call booking platform on Solana. Hosts set availability and rates, callers book and pay USDC via on-chain escrow, both join video calls, and funds auto-distribute when the call ends.
 
-**Live:** [ledgerl.netlify.app](https://ledgerl.netlify.app) · devnet
+**Live:** [ledgerl.netlify.app](https://ledgerly.vidbloq.com) · devnet
 
 <img width="1434" height="746" alt="Screenshot 2026-05-15 at 21 46 34" src="https://github.com/user-attachments/assets/26d8131f-4469-4dc5-80a9-d5b847a881ba" />
 

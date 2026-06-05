@@ -18,13 +18,17 @@ import { ToastProvider } from "@/components";
  * means the config is complete.
  */
 
-const SOLANA_RPC_URL =
-  process.env.NEXT_PUBLIC_SOLANA_RPC_URL ??
-  "https://devnet.helius-rpc.com/?api-key=10b8f1fb-6b38-43cb-a769-e6965206020e";
-const SOLANA_WS_URL = SOLANA_RPC_URL.replace(/^http/, "ws");
+const VIDBLOQ_API_KEY = process.env.NEXT_PUBLIC_VIDBLOQ_API_KEY ?? "";
+const VIDBLOQ_API_SECRET = process.env.NEXT_PUBLIC_VIDBLOQ_API_SECRET ?? "";
 
-const VIDBLOQ_API_KEY = process.env.NEXT_PUBLIC_VIDBLOQ_API_KEY ?? "sk_c061e1d6fa8b1438226b1cc8b8764136";
-const VIDBLOQ_API_SECRET = process.env.NEXT_PUBLIC_VIDBLOQ_API_SECRET ?? "ZHJEEBSlufheOxXnrMdrBp5QepVf+UAVOaLAUKHa+14=";
+const SOLANA_DEVNET_RPC =
+  process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "";
+
+const SOLANA_MAINNET_RPC =
+  process.env.NEXT_PUBLIC_SOLANA_MAINNET_RPC_URL ?? "";
+
+const SOLANA_DEVNET_WS_URL = SOLANA_DEVNET_RPC.replace(/^http/, "ws");
+const SOLANA_MAINNET_WS_URL = SOLANA_MAINNET_RPC.replace(/^http/, "ws");
 
 export function Providers({ children }: { children: ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
@@ -60,13 +64,13 @@ export function Providers({ children }: { children: ReactNode }) {
         solana: {
           rpcs: {
             "solana:devnet": {
-              rpc: createSolanaRpc(SOLANA_RPC_URL),
-              rpcSubscriptions: createSolanaRpcSubscriptions(SOLANA_WS_URL),
+              rpc: createSolanaRpc(SOLANA_DEVNET_RPC),
+              rpcSubscriptions: createSolanaRpcSubscriptions(SOLANA_DEVNET_WS_URL),
             },
             "solana:mainnet": {
-              rpc: createSolanaRpc("https://api.mainnet-beta.solana.com"),
+              rpc: createSolanaRpc(SOLANA_MAINNET_RPC),
               rpcSubscriptions: createSolanaRpcSubscriptions(
-                "wss://api.mainnet-beta.solana.com",
+                SOLANA_MAINNET_WS_URL
               ),
             },
           },
